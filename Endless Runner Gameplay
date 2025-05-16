@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Play Temple Run - an exciting endless runner game in your browser. Dodge obstacles, collect coins, and beat your high score!">
+    <meta name="keywords" content="Temple Run, endless runner, HTML5 game, free online game, adventure game">
+    <title>Temple Run - Endless Runner Adventure Game</title>
+    <style>
+        :root {
+            --primary-color: #e67e22;
+            --secondary-color: #d35400;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #222;
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-canvas {
+            background-color: #2c3e50;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 10;
+        }
+
+        #game-over-screen {
+            display: none;
+        }
+
+        .game-title {
+            font-size: 4rem;
+            color: var(--accent-color);
+            text-shadow: 3px 3px 0 var(--secondary-color);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 5;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 5;
+        }
+
+        .control-btn {
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .ad-container {
+            position: absolute;
+            bottom: 120px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            z-index: 5;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 2.5rem;
+            }
+            
+            .btn {
+                padding: 12px 24px;
+                font-size: 1.2rem;
+            }
+            
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            #hud {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="hud">
+            Score: <span id="score">0</span> | 
+            Coins: <span id="coins">0</span>
+        </div>
+        
+        <div class="ad-container">
+            <!-- AdSense Ad Unit -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"></script>
+            <!-- Game_Bottom_Banner -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                 data-ad-slot="YOUR_AD_SLOT_ID"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+        
+        <div id="controls">
+            <div class="control-btn" id="left-btn">←</div>
+            <div class="control-btn" id="right-btn">→</div>
+            <div class="control-btn" id="jump-btn">↑</div>
+            <div class="control-btn" id="slide-btn">↓</div>
+        </div>
+        
+        <div id="start-screen">
+            <h1 class="game-title">Temple Run</h1>
+            <button class="btn" id="start-btn">Start Game</button>
+            <div class="ad-container">
+                <!-- AdSense Ad Unit -->
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-app-pub-1703718714013363/8945591267></script>
+                <!-- Game_Top_Banner -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client=ca-app-pub-1703718714013363/8945591267
+                     data-ad-slot="YOUR_AD_SLOT_ID"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+        
+        <div id="game-over-screen">
+            <h1 class="game-title">Game Over</h1>
+            <div class="score-display">
+                Score: <span id="final-score">0</span>
+            </div>
+            <div class="score-display">
+                Coins Collected: <span id="final-coins">0</span>
+            </div>
+            <button class="btn" id="restart-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let canvas, ctx;
+        let gameRunning = false;
+        let score = 0;
+        let coins = 0;
+        let speed = 5;
+        let lanes = [-100, 0, 100]; // Left, center, right
+        let currentLane = 1; // Start in center lane
+        let isJumping = false;
+        let isSliding = false;
+        let obstacles = [];
+        let coinItems = [];
+        let lastObstacleTime = 0;
+        let lastCoinTime = 0;
+        let animationId;
+        let gameStartTime;
+        
+        // Player properties
+        const player = {
+            x: 0,
+            y: 0,
+            width: 50,
+            height: 100,
+            jumpHeight: 150,
+            slideHeight: 50
+        };
+        
+        // Initialize game
+        function init() {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Set player initial position
+            player.x = lanes[currentLane];
+            player.y = canvas.height - player.height - 20;
+            
+            // Event listeners
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('restart-btn').addEventListener('click', startGame);
+            
+            // Touch controls
+            document.getElementById('left-btn').addEventListener('touchstart', () => moveLeft());
+            document.getElementById('right-btn').addEventListener('touchstart', () => moveRight());
+            document.getElementById('jump-btn').addEventListener('touchstart', () => jump());
+            document.getElementById('slide-btn').addEventListener('touchstart', () => slide());
+            
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // Draw initial screen
+            draw();
+        }
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Adjust player position on resize
+            if (gameRunning) {
+                player.y = canvas.height - (isSliding ? player.slideHeight : player.height) - 20;
+            } else {
+                player.y = canvas.height - player.height - 20;
+            }
+        }
+        
+        function startGame() {
+            // Reset game state
+            gameRunning = true;
+            score = 0;
+            coins = 0;
+            speed = 5;
+            currentLane = 1;
+            obstacles = [];
+            coinItems = [];
+            isJumping = false;
+            isSliding = false;
+            
+            // Update HUD
+            document.getElementById('score').textContent = score;
+            document.getElementById('coins').textContent = coins;
+            
+            // Hide start/game over screens
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            
+            // Set player position
+            player.x = lanes[currentLane];
+            player.y = canvas.height - player.height - 20;
+            
+            // Record start time
+            gameStartTime = Date.now();
+            
+            // Start game loop
+            gameLoop();
+        }
+        
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update game state
+            update();
+            
+            // Draw everything
+            draw();
+            
+            // Continue animation loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function update() {
+            // Increase score and difficulty over time
+            score = Math.floor((Date.now() - gameStartTime) / 100);
+            document.getElementById('score').textContent = score;
+            
+            // Gradually increase speed
+            speed = 5 + Math.floor(score / 500);
+            
+            // Generate obstacles
+            if (Date.now() - lastObstacleTime > 2000 - Math.min(score / 10, 1500)) {
+                createObstacle();
+                lastObstacleTime = Date.now();
+            }
+            
+            // Generate coins
+            if (Date.now() - lastCoinTime > 1000) {
+                createCoin();
+                lastCoinTime = Date.now();
+            }
+            
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += speed;
+                
+                // Remove obstacles that are off screen
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                }
+                
+                // Check for collisions
+                if (checkCollision(player, obstacles[i])) {
+                    endGame();
+                    return;
+                }
+            }
+            
+            // Update coins
+            for (let i = coinItems.length - 1; i >= 0; i--) {
+                coinItems[i].y += speed;
+                
+                // Remove coins that are off screen
+                if (coinItems[i].y > canvas.height) {
+                    coinItems.splice(i, 1);
+                }
+                
+                // Check for coin collection
+                if (checkCollision(player, coinItems[i])) {
+                    coins++;
+                    document.getElementById('coins').textContent = coins;
+                    coinItems.splice(i, 1);
+                }
+            }
+            
+            // Handle jumping
+            if (isJumping) {
+                player.y -= 8;
+                if (player.y <= canvas.height - player.height - player.jumpHeight - 20) {
+                    isJumping = false;
+                }
+            } else if (player.y < canvas.height - (isSliding ? player.slideHeight : player.height) - 20) {
+                player.y += 8;
+            }
+        }
+        
+        function draw() {
+            // Draw background
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw path
+            ctx.fillStyle = '#34495e';
+            ctx.fillRect(canvas.width / 2 - 150, 0, 300, canvas.height);
+            
+            // Draw player
+            ctx.fillStyle = isSliding ? '#e74c3c' : '#3498db';
+            ctx.fillRect(
+                player.x - (isSliding ? player.width / 2 : player.width / 2),
+                player.y,
+                isSliding ? player.width : player.width,
+                isSliding ? player.slideHeight : player.height
+            );
+            
+            // Draw obstacles
+            ctx.fillStyle = '#e74c3c';
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x - obstacle.width / 2, obstacle.y, obstacle.width, obstacle.height);
+            });
+            
+            // Draw coins
+            ctx.fillStyle = '#f1c40f';
+            coinItems.forEach(coin => {
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y + coin.radius, coin.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function createObstacle() {
+            const lane = Math.floor(Math.random() * 3);
+            obstacles.push({
+                x: lanes[lane],
+                y: -50,
+                width: 40,
+                height: 40
+            });
+        }
+        
+        function createCoin() {
+            const lane = Math.floor(Math.random() * 3);
+            coinItems.push({
+                x: lanes[lane],
+                y: -30,
+                radius: 15
+            });
+        }
+        
+        function checkCollision(player, object) {
+            // Simplified collision detection
+            const playerBottom = player.y + (isSliding ? player.slideHeight : player.height);
+            const objectBottom = object.y + (object.height || object.radius * 2);
+            
+            // Check if objects overlap
+            return (
+                player.x < object.x + (object.width || object.radius * 2) &&
+                player.x + player.width > object.x &&
+                player.y < objectBottom &&
+                playerBottom > object.y
+            );
+        }
+        
+        function moveLeft() {
+            if (!gameRunning) return;
+            currentLane = Math.max(0, currentLane - 1);
+            player.x = lanes[currentLane];
+        }
+        
+        function moveRight() {
+            if (!gameRunning) return;
+            currentLane = Math.min(2, currentLane + 1);
+            player.x = lanes[currentLane];
+        }
+        
+        function jump() {
+            if (!gameRunning || isJumping || player.y < canvas.height - player.height - 20) return;
+            isJumping = true;
+            isSliding = false;
+        }
+        
+        function slide() {
+            if (!gameRunning || isSliding || isJumping) return;
+            isSliding = true;
+            setTimeout(() => {
+                isSliding = false;
+            }, 1000);
+        }
+        
+        function handleKeyPress(e) {
+            if (!gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    moveRight();
+                    break;
+                case 'ArrowUp':
+                    jump();
+                    break;
+                case 'ArrowDown':
+                    slide();
+                    break;
+            }
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            // Update final score display
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-coins').textContent = coins;
+            
+            // Show game over screen
+            document.getElementById('game-over-screen').style.display = 'flex';
+        }
+        
+        // Initialize the game when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
